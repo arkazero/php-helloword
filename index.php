@@ -1,4 +1,5 @@
 <?php
-print "Hello, World! php version is debe sacar error por punto y coma" . PHP_VERSION ."- Error matematico:". $a=10/10."\n"
+print "Hello, World! php version is " . PHP_VERSION . "Error matematico: \n";
+$a=10/10;
 echo $a;  
 ?>
