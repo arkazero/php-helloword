@@ -1,0 +1,532 @@
+swagger: '2.0'
+info:
+  description: API dirigida para los proveedores de parqueaderos de CredibanCo.
+  version: 1.0.0
+  title: API Parqueaderos
+host: api-parqueaderos-credibanco-dev-apicast-staging.apps.cluospruv4.credivisa.local:443
+schemes:
+  - https
+paths:
+  /v1/parqueadero/descuento/{idProvider}:
+    get:
+      tags:
+        - parqueadero
+      summary: Validar descuento dependiendo del proveedor
+      description: retorna el código de convenio.
+      security:
+        - Bearer: []
+      operationId: ValidateDiscount
+      produces:
+        - application/json
+      parameters:
+        - name: idProvider
+          in: path
+          description: ID para diferenciar entre los proveedores de parqueaderos.
+          required: true
+          type: string
+        - name: IdOperator
+          in: query
+          description: Código del operador.
+          required: true
+          type: integer
+        - name: IdParking
+          in: query
+          description: Id del parqueadero asociado
+          required: true
+          type: integer
+        - name: TypeScanData
+          in: query
+          description: Tipología del código escaneado. (En mayúsculas, sin caracteres especiales)
+          required: true
+          type: string
+        - name: DataScan
+          in: query
+          description: String que representa el valor/dato escaneado en el código.
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/ResponseValidate'
+    post:
+      tags:
+        - parqueadero
+      summary: Aplicar el descuento al estado de cuenta.
+      description: ''
+      security:
+        - Bearer: []
+      operationId: ApplyDiscount
+      produces:
+        - application/json
+      parameters:
+        - name: idProvider
+          in: path
+          description: ID para diferenciar entre los proveedores de parqueaderos.
+          required: true
+          type: string
+        - name: body
+          in: body
+          description: formato del body.
+          required: true
+          schema:
+            $ref: '#/definitions/DataSetAgreement'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/ResponseSetAgreement'
+  /v1/parqueadero/estadoCuenta/{idProvider}:
+    get:
+      tags:
+        - parqueadero
+      summary: Método para realizar consulta del estado de cuenta mediante tarjeta de parking o mediante placa de vehículo
+      description: retorna el estado de cuenta
+      security:
+        - Bearer: []
+      operationId: GetAccountStatus
+      produces:
+        - application/json
+      parameters:
+        - name: idProvider
+          in: path
+          description: ID para diferenciar entre los proveedores de parqueaderos.
+          required: true
+          type: string
+        - name: IdOperator
+          in: query
+          description: Código del operador.
+          required: true
+          type: integer
+        - name: IdParking
+          in: query
+          description: Id del parqueadero asociado.
+          required: true
+          type: integer
+        - name: CountryCode
+          in: query
+          description: Código del país.
+          required: true
+          type: string
+        - name: licensePlate
+          in: query
+          description: Número de la placa
+          required: false
+          type: string
+        - name: SmartCard
+          in: query
+          description: Número de la tarjeta
+          required: false
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/ResponseEstadoCuenta'
+  /v1/parqueadero/autorizacionSalida/{idProvider}:
+    post:
+      tags:
+        - parqueadero
+      summary: Permite notificar el pago del parqueadero y solicitar la salida
+      description: ''
+      security:
+        - Bearer: []
+      operationId: NotifyPayment
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: idProvider
+          in: path
+          description: ID para diferenciar entre los proveedores de parqueaderos.
+          required: true
+          type: string
+        - in: body
+          name: body
+          description: Datos requeridos para notificar el pago
+          required: true
+          schema:
+            $ref: '#/definitions/NotifyPayment'
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/NotifyPaymentResponse'
+  /v1/parqueadero/lugarParqueo/{idProvider}:
+    get:
+      tags:
+        - parqueadero
+      summary: Retorna ubicación del vehículo dentro del parqueadero
+      description: ''
+      security:
+        - Bearer: []
+      operationId: GetLocationByPlate
+      produces:
+        - application/json
+      parameters:
+        - name: idProvider
+          in: path
+          description: ''
+          required: true
+          type: integer
+          format: int64
+        - name: IdOperator
+          in: query
+          description: ''
+          required: true
+          type: string
+        - name: IdParking
+          in: query
+          description: Id del parqueadero asociado
+          required: true
+          type: integer
+        - name: CountryCode
+          in: query
+          description: ''
+          required: true
+          type: string
+        - name: licensePlate
+          in: query
+          description: ''
+          required: true
+          type: string
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/GetLocationByPlateResponse'
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+definitions:
+  DataValidateResponse:
+    type: object
+    properties:
+      Error:
+        type: string
+        description: Descripción del error presentado. (Nulo cuando no se presenta error)
+      ResponseCode:
+        type: integer
+        description: Código de respuesta de la validación de convenios.
+      AgreementCode:
+        type: integer
+        description: Indica el código de convenio asociado al código de   barras. (Cero (0) cuando presenta error)
+      TradeCode:
+        type: string
+        description: Indica el código de comercio asociado al operador.
+  ResponseValidate:
+    type: object
+    required:
+      - statuscode
+      - data
+    properties:
+      statuscode:
+        type: integer
+        description: Descripción del error presentado. (Nulo cuando no se presenta error)
+      data:
+        $ref: '#/definitions/DataValidateResponse'
+  DataSetAgreement:
+    required:
+      - IdOperator
+      - IdParking
+      - IdParkingMovement
+      - AgreementCode
+    properties:
+      IdOperator:
+        type: integer
+        description: Código de operador.
+      IdParking:
+        type: integer
+        description: Id del parqueadero asociado
+      IdParkingMovement:
+        type: integer
+        description: Id del movimiento parking al cual se desea aplicar el convenio
+      AgreementCode:
+        type: string
+        description: Código de convenio obtenido previamente mediante validación de convenio por código de barras.
+  DataSetAgreementResponse:
+    type: object
+    properties:
+      Response:
+        type: string
+        description: Respuesta de la solicitud de inserción de convenio.
+      ResponseCode:
+        type: integer
+        description: Código de respuesta de la solicitud de inserción de convenio
+      TradeCode:
+        type: string
+        description: Código de comercio asociado al operador.
+  ResponseSetAgreement:
+    type: object
+    required:
+      - statuscode
+      - data
+    properties:
+      statuscode:
+        type: integer
+        description: Descripción del error presentado. (Nulo cuando no se presenta error)
+      data:
+        $ref: '#/definitions/DataSetAgreementResponse'
+  LiquidationTaxes:
+    type: object
+    properties:
+      _Id_LiquidationTax:
+        type: integer
+        format: int64
+      _Id_Liquidation:
+        type: integer
+        format: int64
+      _Id_Tax:
+        type: integer
+        format: int64
+      _Vl_Tax:
+        type: number
+        format: float
+      _Name_Tax:
+        type: string
+    xml:
+      name: LiquidationTaxes
+  Liquidation:
+    type: object
+    properties:
+      LTDateTimeLiquidation:
+        type: number
+        format: float
+      LTDateTimeEntrance:
+        type: number
+        format: float
+      Id_AgreementApplied:
+        type: integer
+        format: int64
+      Id_BagApplied:
+        type: integer
+        format: int64
+      SecondsAppliedBag:
+        type: integer
+        format: int64
+      Id_Liquidation:
+        type: integer
+        format: int64
+      Vl_Liquidated:
+        type: number
+        format: float
+      TotalToPay:
+        type: number
+        format: float
+      Id_Concept:
+        type: integer
+        format: int64
+      Id_MonthlyPayment:
+        type: integer
+        format: int64
+      Id_BagMinutes:
+        type: integer
+        format: int64
+      OperatorMat:
+        type: string
+      LiquidationTaxes:
+        type: array
+        xml:
+          name: LiquidationTaxes
+          wrapped: true
+        items:
+          $ref: '#/definitions/LiquidationTaxes'
+      Name_Concept:
+        type: string
+      Name_Concept_EN:
+        type: string
+      IsExitTime:
+        type: boolean
+      IsPaidAgain:
+        type: boolean
+      Id_Authorization:
+        type: integer
+        format: int64
+    xml:
+      name: Liquidation
+  lstRecords:
+    type: object
+    required:
+      - ''
+    properties:
+      ParkingName:
+        type: string
+        description: Nombre del parqueadero.
+      IdParking:
+        type: integer
+        description: Id del parqueadero asociado
+      ClientType:
+        type: string
+        description: Indica el tipo de cliente de parqueadero (Visitante, Autorizado..)
+      UniqueId:
+        type: string
+        description: Indica el código único offline de la transacción.
+      IdParkingMovement:
+        type: integer
+        description: Indica el Id de movimiento parking.
+      TransactionCode:
+        type: string
+        description: Indica el código de transacción.
+      VehicleType:
+        type: string
+        description: ': Indica el tipo de vehículo del cliente de parqueadero. (Automovil, Moto, Bicicleta, Camión)'
+      EntrancePlate:
+        type: string
+        description: Indica el número de placa ó matrícula del cliente de parqueadero.
+      EntranceModule:
+        type: string
+        description: Indica el código del módulo de entrada por donde entró el vehículo del cliente de parqueadero.
+      DateTimeEntrance:
+        type: string
+        description: Indica la fecha hora entrada del vehículo del cliente de parqueadero.
+      Duration:
+        type: string
+        description: Indica la duración del cliente de parqueadero, en el parqueadero hasta el momento de realizar la liquidación
+      AgreementApplied:
+        type: boolean
+        description: Indica si el movimiento tiene convenio aplicado o no.
+      NameAgreementApplied:
+        type: string
+        description: Indica el nombre del convenio aplicado.
+      TotalAmount:
+        type: number
+        description: Indica el valor total a pagar por el servicio de parqueadero.
+      PaymentModule:
+        type: string
+        description: Indica el código del módulo de pago en donde el cliente de parqueadero realizó el último pago.
+      LastPaymentDate:
+        type: string
+        description: Indica la fecha hora del último pago.
+      StatusParking:
+        type: string
+        description: Indica el estado del vehículo del cliente de parqueadero.
+      ParkingTicket:
+        type: string
+        description: Enlace en el cual se puede visualizar la información básica de parqueo.
+      TradeCode:
+        type: string
+        description: Indica el código de comercio asociado al operador.
+      Images:
+        type: string
+        description: Indica la lista de imagenes del vehículo del cliente de parqueadero en formato StringBase64.
+      liquidation:
+        type: array
+        xml:
+          name: liquidation
+          wrapped: true
+        items:
+          $ref: '#/definitions/Liquidation'
+  DataEstadoCuenta:
+    type: object
+    required:
+      - statuscode
+      - data
+    properties:
+      Error:
+        type: string
+      ResponseCode:
+        type: number
+      lstRecords:
+        type: array
+        items:
+          $ref: '#/definitions/lstRecords'
+  ResponseEstadoCuenta:
+    type: object
+    required:
+      - statuscode
+      - data
+    properties:
+      statuscode:
+        type: integer
+        description: Descripción del error presentado. (Nulo cuando no se presenta error)
+      data:
+        $ref: '#/definitions/DataEstadoCuenta'
+  NotifyPayment:
+    type: object
+    properties:
+      IdOperator:
+        type: integer
+        format: int64
+      IdParking:
+        type: integer
+      IdParkingMovement:
+        type: integer
+        format: int64
+      TransactionCode:
+        type: string
+      UserEmail:
+        type: string
+      Liquidation:
+        type: array
+        xml:
+          name: liquidation
+          wrapped: true
+        items:
+          $ref: '#/definitions/Liquidation'
+    xml:
+      name: Order
+  DataPaymentResponse:
+    type: object
+    properties:
+      Response:
+        type: string
+      ResponseCode:
+        type: integer
+        format: int64
+      Invoice:
+        type: string
+      TimeToExit:
+        type: integer
+        format: int64
+      TradeCode:
+        type: string
+  NotifyPaymentResponse:
+    type: object
+    properties:
+      statuscode:
+        type: string
+      data:
+        $ref: '#/definitions/DataPaymentResponse'
+  LocationResponse:
+    type: object
+    properties:
+      Error:
+        type: string
+      LabelLevelName:
+        type: string
+      LabelPlateName:
+        type: string
+      LabelSectorName:
+        type: string
+      LabelSlotName:
+        type: string
+      LevelName:
+        type: string
+      Name:
+        type: string
+      Plate:
+        type: string
+      PlateFound:
+        type: string
+      SectorName:
+        type: string
+  DataLocationResponse:
+    type: object
+    properties:
+      Error:
+        type: string
+      ResponseCode:
+        type: integer
+        format: int64
+      Location:
+        $ref: '#/definitions/LocationResponse'
+  GetLocationByPlateResponse:
+    type: object
+    properties:
+      statuscode:
+        type: string
+      data:
+        $ref: '#/definitions/DataLocationResponse'
